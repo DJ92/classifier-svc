@@ -1,1 +1,3 @@
-mysqlclient
+mysqlclient==2.1.1
+uWSGI==2.0.21
+Flask==2.2.2

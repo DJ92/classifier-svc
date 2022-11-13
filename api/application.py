@@ -21,4 +21,21 @@ def application(environ, start_response):
     return ['{"message": "ok"}']
 """
 
-application = None
+from flask import Flask
+
+from datasource.schema import DATABASE_QUERY, TABLES_QUERY
+from db import connect
+
+application = Flask(__name__)
+mysql_db = connect()
+
+
+def setup_db():
+    db_cursor = mysql_db.connection.cursor()
+    db_cursor.execute(DATABASE_QUERY)
+    db_cursor.execute(TABLES_QUERY)
+
+
+if __name__ == "__main__":
+    setup_db()
+    application.run(host='0.0.0.0')
