@@ -1,7 +1,7 @@
 from flask import Blueprint
 
-from api.controller.entities.response import Response
-from api.enum.response_type import ResponseType
+from controller.entities.response import Response
+from enums.response_type import ResponseType
 
 health_api = Blueprint('health', __name__)
 

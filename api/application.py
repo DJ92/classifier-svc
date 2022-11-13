@@ -22,14 +22,25 @@ def application(environ, start_response):
 """
 from flask import Flask
 
-from api.controller.healthcheck import health_api
-from api.controller.models import models_api
+from datasource.db import connect
+from datasource.schema import DATABASE_QUERY, TABLES_QUERY
+from controller.healthcheck import health_api
+from controller.models import models_api
+
 
 application = Flask(__name__)
+mysql_db = connect()
 
 application.register_blueprint(health_api, url_prefix='/health')
 application.register_blueprint(models_api, url_prefix='/models')
 
 
+def setup_db():
+    db_cursor = mysql_db.connection.cursor()
+    db_cursor.execute(DATABASE_QUERY)
+    db_cursor.execute(TABLES_QUERY)
+
+
 if __name__ == "__main__":
+    setup_db()
     application.run(host='0.0.0.0')

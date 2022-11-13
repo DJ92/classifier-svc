@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from api.enum.response_type import ResponseType
+from api.enums.response_type import ResponseType
 
 
 class Response(BaseModel):

@@ -2,7 +2,7 @@ from typing import Union, List, Dict
 
 from pydantic import BaseModel
 
-from api.enum.classifier_type import ClassifierType
+from api.enums.classifier_type import ClassifierType
 
 
 class ClassifierModel(BaseModel):

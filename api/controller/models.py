@@ -3,8 +3,8 @@ from flask_pydantic import validate
 
 from api.controller.entities.request import ClassifierModel, TrainModel
 from api.controller.entities.response import Response
-from api.enum.classifier_type import ClassifierType
-from api.enum.response_type import ResponseType
+from api.enums.classifier_type import ClassifierType
+from api.enums.response_type import ResponseType
 
 models_api = Blueprint('models', __name__)
 
