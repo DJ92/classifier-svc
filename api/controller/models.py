@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pickle
 
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 from flask_pydantic import validate
 
 from entities.request import ClassifierModel, TrainModel
@@ -14,7 +14,7 @@ from enums.response_type import ResponseType
 
 from datasource.db import connect
 from datasource.schema import GET_ALL_MODELS, GET_ALL_TRAINED_MODELS, \
-    GET_MODEL_QUERY, INSERT_MODEL_QUERY, INSERT_MODEL_TRAINING_QUERY, UPDATE_MODEL_QUERY
+    GET_MODEL_QUERY, INSERT_MODEL_QUERY, INSERT_MODEL_TRAINING_QUERY, USE_DB_QUERY, UPDATE_MODEL_QUERY
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.naive_bayes import CategoricalNB
@@ -38,6 +38,7 @@ def create_model(body: ClassifierModel):
     try:
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(INSERT_MODEL_QUERY, (body.model, body.d, body.n_classes, 0, model_params, model_data))
         model_id = cur.lastrowid
         if model_id > 0:
@@ -50,10 +51,12 @@ def create_model(body: ClassifierModel):
 
 
 @models_api.route("/<model_id>/", methods=["GET"])
+@validate()
 def get_model(model_id: int):
     try:
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(GET_MODEL_QUERY, (model_id,))
         row = cur.fetchone()
         if row:
@@ -65,7 +68,7 @@ def get_model(model_id: int):
             conn.close()
             return model.json()
         else:
-            return Response(status=ResponseType.ERROR, message="Error during fetching model: {}".format(row)).json()
+            return "Record not found", 404
     except Exception as e:
         return Response(status=ResponseType.ERROR, message="Error during fetching model: {}".format(e)).json()
 
@@ -76,6 +79,7 @@ def train_model(model_id: int, body: TrainModel):
     try:
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(GET_MODEL_QUERY, (model_id,))
         row = cur.fetchone()
         if row:
@@ -85,6 +89,8 @@ def train_model(model_id: int, body: TrainModel):
             n_trained = int(row[4])
             model_data = row[6]
             model_obj = pickle.loads(model_data)
+            if len(body.x) != d or body.y > (n_classes - 1) or model_obj is None:
+                return "Bad Request for x & y values: x={} y={}".format(body.x, body.y), 400
             model_obj.partial_fit(X=[np.array(body.x)], y=[body.y], classes=np.arange(0, n_classes, 1))
             cur.execute(INSERT_MODEL_TRAINING_QUERY, (model_id,))
             model_data = pickle.dumps(model_obj)
@@ -100,13 +106,18 @@ def train_model(model_id: int, body: TrainModel):
         return Response(status=ResponseType.ERROR, message="Error during training model: {}".format(e)).json()
 
 
-@models_api.route("/<model_id>/predict/<x>", methods=["GET"])
-def predict_model(model_id: int, x: str = None):
+@models_api.route("/<model_id>/predict/", methods=["GET"])
+@validate()
+def predict_model(model_id: int):
     try:
+        x = request.args.get('x') or ""
+        if not x:
+            return "Not a valid value for X", 400
         x_str = base64.b64decode(x).decode("utf-8").replace('[', '').replace(']', '')
         x_arr = [float(x) for x in x_str.split(",")]
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(GET_MODEL_QUERY, (model_id,))
         row = cur.fetchone()
         if row:
@@ -117,7 +128,7 @@ def predict_model(model_id: int, x: str = None):
             conn.close()
             return jsonify({"x": x_arr, "y": result.item()})
         else:
-            return Response(status=ResponseType.ERROR, message="Error during model prediction: {}".format(row)).json()
+            return Response(status=ResponseType.ERROR, message="Error during model prediction: model={}".format(row)).json()
     except Exception as e:
         return Response(status=ResponseType.ERROR, message="Error during model prediction: {}".format(e)).json()
 
@@ -127,6 +138,7 @@ def get_models():
     try:
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(GET_ALL_MODELS)
         rows = cur.fetchall()
         model_list = []
@@ -151,7 +163,7 @@ def get_models():
             if (max(trained_values) - min(trained_values)) == 0:
                 training_score = 1.0
             else:
-                training_score = (x - min(trained_values)) / (max(trained_values) - min(trained_values))
+                training_score = (x - min(trained_values))/(max(trained_values) - min(trained_values))
             model["training_score"] = training_score
 
         models = {"models": model_list}
@@ -167,6 +179,7 @@ def get_model_groups():
     try:
         conn = connect()
         cur = conn.cursor()
+        cur.execute(USE_DB_QUERY)
         cur.execute(GET_ALL_TRAINED_MODELS)
         rows = cur.fetchall()
         group_list = []
