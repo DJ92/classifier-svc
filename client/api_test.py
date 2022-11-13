@@ -8,7 +8,7 @@ class ApiTestCase(unittest.TestCase):
     HOST = 'http://api:8888'
 
     def test_0_health(self):
-        """ anity check to ensure that the API is reachable """
+        """ Sanity check to ensure that the API is reachable """
         resp = self._request('GET', '/health/')
         assert resp['status'] == 'ok'
 
@@ -21,9 +21,11 @@ class ApiTestCase(unittest.TestCase):
             'd': 4,
             'n_classes': 3,
         })
+        print(resp)
         model_id = resp['id']
         # read
         resp = self._request('GET', f'/models/{model_id}/')
+        print(resp)
         assert resp['model'] == 'SGDClassifier'
         assert resp['params']['penalty'] == 'l1'
         assert resp['d'] == 4
@@ -74,7 +76,7 @@ class ApiTestCase(unittest.TestCase):
         assert resp['n_trained'] == n
         # predict
         xb64 = 'WzEuMTEsMi4yMiwzLjMzLC00LjQ0XQ=='
-        resp = self._request('GET', f'/models/{model_id}/predict/?x={xb64}')
+        resp = self._request('GET', f'/entities/{model_id}/predict/?x={xb64}')
         assert resp['y'] < 2
 
     def test_5_train_errors(self):
@@ -118,7 +120,7 @@ class ApiTestCase(unittest.TestCase):
             {'model': 'MLPClassifier', 'n_trained': 48, 'training_score': 1.0},
         ]
         model_id_to_score = {}
-        # create and train all models
+        # create and train all entities
         for model in models:
             # create
             resp = self._request('POST', '/models/', {
@@ -140,7 +142,7 @@ class ApiTestCase(unittest.TestCase):
                 })
         # get training_score
         resp = self._request('GET', f'/models/')
-        resp_model_id_to_score = {model['id']: model['training_score'] for model in resp['models']}
+        resp_model_id_to_score = {model['id']: model['training_score'] for model in resp['entities']}
         for m_id, training_score in model_id_to_score.items():
             resp_score = resp_model_id_to_score[m_id]
             assert numpy.isclose(training_score, resp_score)
