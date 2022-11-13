@@ -15,15 +15,17 @@ class ApiTestCase(unittest.TestCase):
     def test_1_read_write(self):
         """ test read/write operation """
         # create
-        resp = self._request('POST', '/entities/', {
+        resp = self._request('POST', '/models/', {
             'model': 'SGDClassifier',
             'params': {'alpha': 0.0001, 'penalty': 'l1'},
             'd': 4,
             'n_classes': 3,
         })
+        print(resp)
         model_id = resp['id']
         # read
-        resp = self._request('GET', f'/entities/{model_id}/')
+        resp = self._request('GET', f'/models/{model_id}/')
+        print(resp)
         assert resp['model'] == 'SGDClassifier'
         assert resp['params']['penalty'] == 'l1'
         assert resp['d'] == 4
@@ -34,7 +36,7 @@ class ApiTestCase(unittest.TestCase):
     def test_2_wrong_write(self):
         """ test erroneous write operation """
         with self.assertRaises(Exception) as error:
-            self._request('POST', '/entities/', {
+            self._request('POST', '/models/', {
                 'model': 'ERROR',
                 'params': {'alpha': 0.0001},
                 'd': 4,
@@ -45,7 +47,7 @@ class ApiTestCase(unittest.TestCase):
     def test_3_wrong_read(self):
         """ test erroneous read operation """
         with self.assertRaises(Exception) as error:
-            self._request('GET', '/entities/123456789/')
+            self._request('GET', '/models/123456789/')
         assert error.exception.response.status_code == 404
 
     def test_4_train_predict(self):
@@ -53,7 +55,7 @@ class ApiTestCase(unittest.TestCase):
         n = 100
         d = 4
         # create
-        resp = self._request('POST', '/entities/', {
+        resp = self._request('POST', '/models/', {
             'model': 'SGDClassifier',
             'params': {},
             'd': d,
@@ -65,12 +67,12 @@ class ApiTestCase(unittest.TestCase):
         W = numpy.random.randn(d)
         Y = X.dot(W) > 0
         for i in range(n):
-            self._request('POST', f'/entities/{model_id}/train/', {
+            self._request('POST', f'/models/{model_id}/train/', {
                 'x': list(X[i, :]),
                 'y': int(Y[i]),
             })
         # read
-        resp = self._request('GET', f'/entities/{model_id}/')
+        resp = self._request('GET', f'/models/{model_id}/')
         assert resp['n_trained'] == n
         # predict
         xb64 = 'WzEuMTEsMi4yMiwzLjMzLC00LjQ0XQ=='
@@ -82,7 +84,7 @@ class ApiTestCase(unittest.TestCase):
         d = 4
         n_classes = 3
         # create
-        resp = self._request('POST', '/entities/', {
+        resp = self._request('POST', '/models/', {
             'model': 'SGDClassifier',
             'params': {},
             'd': d,
@@ -93,7 +95,7 @@ class ApiTestCase(unittest.TestCase):
         X = numpy.random.randn(d + 1)
         Y = numpy.random.randint(0, n_classes)
         with self.assertRaises(Exception) as error:
-            self._request('POST', f'/entities/{model_id}/train/', {
+            self._request('POST', f'/models/{model_id}/train/', {
                 'x': list(X),
                 'y': int(Y),
             })
@@ -102,7 +104,7 @@ class ApiTestCase(unittest.TestCase):
         X = numpy.random.randn(d)
         Y = n_classes
         with self.assertRaises(Exception) as error:
-            self._request('POST', f'/entities/{model_id}/train/', {
+            self._request('POST', f'/models/{model_id}/train/', {
                 'x': list(X),
                 'y': int(Y),
             })
@@ -121,7 +123,7 @@ class ApiTestCase(unittest.TestCase):
         # create and train all entities
         for model in models:
             # create
-            resp = self._request('POST', '/entities/', {
+            resp = self._request('POST', '/models/', {
                 'model': model['model'],
                 'params': {},
                 'd': d,
@@ -134,12 +136,12 @@ class ApiTestCase(unittest.TestCase):
             W = numpy.random.randn(d)
             Y = 1 + X.dot(W) > 0
             for i in range(len(Y)):
-                self._request('POST', f'/entities/{model_id}/train/', {
+                self._request('POST', f'/models/{model_id}/train/', {
                     'x': list(X[i, :]),
                     'y': int(Y[i]),
                 })
         # get training_score
-        resp = self._request('GET', f'/entities/')
+        resp = self._request('GET', f'/models/')
         resp_model_id_to_score = {model['id']: model['training_score'] for model in resp['entities']}
         for m_id, training_score in model_id_to_score.items():
             resp_score = resp_model_id_to_score[m_id]

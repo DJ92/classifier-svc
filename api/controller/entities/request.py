@@ -1,15 +1,16 @@
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 
 from pydantic import BaseModel
 
-from api.enums.classifier_type import ClassifierType
+from enums.classifier_type import ClassifierType
 
 
 class ClassifierModel(BaseModel):
     model: ClassifierType
+    params: Dict = {}
     d: int
     n_classes: int
-    params: Dict[str, Union[str, int, float, List[int], List[float]]] = {}
+    n_trained: Optional[int]
 
 
 class TrainModel(BaseModel):

@@ -1,12 +1,13 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
-from api.enums.response_type import ResponseType
+from enums.response_type import ResponseType
 
 
 class Response(BaseModel):
     status: ResponseType
+    message: Optional[str]
 
 
 class ModelGroup(BaseModel):
