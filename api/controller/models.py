@@ -1,6 +1,5 @@
 import base64
 import json
-import statistics
 
 import numpy as np
 import pickle
@@ -8,8 +7,8 @@ import pickle
 from flask import jsonify, Blueprint
 from flask_pydantic import validate
 
-from controller.entities.request import ClassifierModel, TrainModel
-from controller.entities.response import Response
+from entities.request import ClassifierModel, TrainModel
+from entities.response import Response
 from enums.classifier_type import ClassifierType
 from enums.response_type import ResponseType
 
